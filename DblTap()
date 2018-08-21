@@ -1,0 +1,46 @@
+;===============================================================================
+; Double Tap detection function by the GroggyOtter
+; Syntax:
+; 	DblTap(key [, delay])
+; 	Key			= Designed to use A_ThisHotkey or, in some situations, A_Label
+; 	Delay (ms)	= Optional. Max time to register a double tap
+; Use:
+; 	Put DblTap(A_ThisHotkey) anywhere in the body of your hotkey
+; Return:
+; 	Function returns 1 for double tap, 0 if not double tap
+; Remarks:
+; 	ErrorLevel is set to the letter of the key that was matched, if any
+;===============================================================================
+DblTap(hk, delay:=300){
+	static	lastKey
+	static	lastKeyTime
+	static	modA		:= ["#","!","^","+","<",">","*","~","$"]
+	thisKeyTime	:= A_TickCount
+	result		:= false
+	thisKey		:= ""
+	isUp		:= (RegExMatch(hk, "i)^.*?\s+Up\s*$") > 0) ? " Up" : ""
+	hk			:= RegExReplace(hk, "i)^\s*(.*)\s+Up\s*$", "$1")
+	lastChr		:= SubStr(hk, 0)
+	
+	for index, modifier in modA
+		if (lastChr = modifier)
+			thisKey := lastChr
+	
+	if (thisKey = "")
+		Loop, Parse, hk
+			for index, modifier in modA
+				if (A_LoopField = modifier)
+					Break
+				Else if (A_Index = modA.Length())
+					thisKey .= A_LoopField
+	
+	if ((thisKey . isUp) = lastKey) && ((thisKeyTime - lastKeyTime) < delay)
+		result	:= true
+	
+	KeyWait, % thisKey, % ((isUp = "") ? "D" : "")
+	
+	lastKey		:= ErrorLevel	:= thisKey . isUp
+	lastKeyTime	:= ((result = true) ? 0 : A_TickCount)
+	
+	return result
+}
